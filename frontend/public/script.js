@@ -1,5 +1,12 @@
-let accessToken = '';
-let refreshToken = '';
+let accessToken = localStorage.getItem('accessToken') || '';
+let refreshToken = localStorage.getItem('refreshToken') || '';
+
+function saveTokens(access, refresh) {
+    accessToken = access;
+    refreshToken = refresh;
+    localStorage.setItem('accessToken', access);
+    localStorage.setItem('refreshToken', refresh);
+}
 
 function setMessage(elementId, message, isError = false) {
     const element = document.getElementById(elementId);
@@ -9,15 +16,14 @@ function setMessage(elementId, message, isError = false) {
 
 function formatDateTime(dateTime) {
     if (!dateTime) return null;
-    // Преобразуем "2025-05-30T12:00" в "2025-05-30T12:00:00Z"
     const date = new Date(dateTime);
-    return date.toISOString(); // "2025-05-30T12:00:00.000Z"
+    return date.toISOString();
 }
 
 async function register() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
-    const email = prompt('Enter email:');
+    const email = prompt('Enter email (optional):');
     try {
         const response = await fetch('http://localhost:8080/register', {
             method: 'POST',
@@ -42,8 +48,7 @@ async function login() {
         });
         const data = await response.json();
         if (response.ok) {
-            accessToken = data.access_token;
-            refreshToken = data.refresh_token;
+            saveTokens(data.access_token, data.refresh_token);
             document.getElementById('auth').style.display = 'none';
             document.getElementById('tasks').style.display = 'block';
             loadTasks();
@@ -65,7 +70,7 @@ async function refreshTokenIfNeeded() {
         });
         const data = await response.json();
         if (response.ok) {
-            accessToken = data.access_token;
+            saveTokens(data.access_token, data.refresh_token);
             return true;
         }
         return false;
@@ -89,26 +94,55 @@ async function loadTasks() {
                 return loadTasks();
             }
         }
-        const tasks = await response.json();
-        const taskList = document.getElementById('task-list');
-        taskList.innerHTML = '';
+        const data = await response.json();
+        const pendingTasks = document.getElementById('pending-tasks');
+        const inProgressTasks = document.getElementById('in_progress-tasks');
+        const doneTasks = document.getElementById('done-tasks');
+        pendingTasks.innerHTML = '';
+        inProgressTasks.innerHTML = '';
+        doneTasks.innerHTML = '';
         if (response.ok) {
+            let tasks = Array.isArray(data) ? data : [];
+            tasks.sort((a, b) => b.priority - a.priority);
             tasks.forEach(task => {
                 const div = document.createElement('div');
                 div.className = 'task border p-4 rounded mb-2';
-                div.innerHTML = `
-                    <h3 class="text-lg font-semibold">${task.title}</h3>
-                    <p>${task.description || 'No description'}</p>
-                    <p>Status: <span class="text-${task.status === 'done' ? 'green' : task.status === 'in_progress' ? 'yellow' : 'gray'}-500">${task.status}</span></p>
-                    <p>Priority: ${task.priority}</p>
-                    <p>Due: ${task.due_date || 'N/A'}</p>
-                    <button onclick="openModal(${task.id}, '${task.title}', '${task.description || ''}', '${task.status}', ${task.priority}, '${task.due_date || ''}')" class="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600">Update</button>
-                    <button onclick="deleteTask(${task.id})" class="bg-red-500 text-white p-1 ml-2 rounded hover:bg-red-600">Delete</button>
-                `;
-                taskList.appendChild(div);
+                const title = document.createElement('h3');
+                title.className = 'text-lg font-semibold';
+                title.textContent = task.title;
+                const desc = document.createElement('p');
+                desc.textContent = task.description || 'No description';
+                const status = document.createElement('p');
+                status.textContent = `Status: ${task.status}`;
+                const priority = document.createElement('p');
+                priority.textContent = `Priority: ${task.priority}`;
+                const due = document.createElement('p');
+                due.textContent = `Due: ${task.due_date || 'N/A'}`;
+                const updateBtn = document.createElement('button');
+                updateBtn.textContent = 'Update';
+                updateBtn.className = 'bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600';
+                updateBtn.onclick = () => openModal(task.id, task.title, task.description || '', task.status, task.priority, task.due_date || '');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.className = 'bg-red-500 text-white p-1 ml-2 rounded hover:bg-red-600';
+                deleteBtn.onclick = () => deleteTask(task.id);
+                div.appendChild(title);
+                div.appendChild(desc);
+                div.appendChild(status);
+                div.appendChild(priority);
+                div.appendChild(due);
+                div.appendChild(updateBtn);
+                div.appendChild(deleteBtn);
+                if (task.status === 'pending') {
+                    pendingTasks.appendChild(div);
+                } else if (task.status === 'in_progress') {
+                    inProgressTasks.appendChild(div);
+                } else if (task.status === 'done') {
+                    doneTasks.appendChild(div);
+                }
             });
         } else {
-            setMessage('task-message', tasks.error || 'Failed to fetch tasks', true);
+            setMessage('task-message', data.error || 'Failed to fetch tasks', true);
         }
     } catch (error) {
         setMessage('task-message', 'Error: ' + error.message, true);
@@ -120,12 +154,15 @@ async function createTask() {
         setMessage('task-message', 'Please login first', true);
         return;
     }
+    let priority = parseInt(document.getElementById('priority').value);
+    if (isNaN(priority)) {
+        priority = 1; 
+    }
     const task = {
         title: document.getElementById('title').value,
         description: document.getElementById('description').value,
-        status: document.getElementById('status').value,
-        priority: parseInt(document.getElementById('priority').value),
-        due_date: formatDateTime(document.getElementById('due_date').value)
+        status: "pending",
+        priority: priority
     };
     try {
         const response = await fetch('http://localhost:8080/tasks', {
@@ -136,6 +173,11 @@ async function createTask() {
             },
             body: JSON.stringify(task)
         });
+        if (response.status === 401) {
+            if (await refreshTokenIfNeeded()) {
+                return createTask();
+            }
+        }
         const data = await response.json();
         if (response.ok) {
             setMessage('task-message', 'Task created!');
@@ -180,6 +222,11 @@ async function saveUpdate() {
             },
             body: JSON.stringify(task)
         });
+        if (response.status === 401) {
+            if (await refreshTokenIfNeeded()) {
+                return saveUpdate();
+            }
+        }
         const data = await response.json();
         if (response.ok) {
             closeModal();
@@ -203,6 +250,11 @@ async function deleteTask(id) {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
+        if (response.status === 401) {
+            if (await refreshTokenIfNeeded()) {
+                return deleteTask(id);
+            }
+        }
         const data = await response.json();
         if (response.ok) {
             setMessage('task-message', 'Task deleted!');

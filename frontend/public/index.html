@@ -23,6 +23,21 @@
             max-width: 500px;
             border-radius: 5px;
         }
+        .task-board {
+            display: flex;
+            justify-content: space-between;
+        }
+        .column {
+            width: 30%;
+            padding: 10px;
+            background-color: #f3f4f6;
+            border-radius: 5px;
+        }
+        .task {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -42,19 +57,30 @@
         <!-- Tasks Section -->
         <div id="tasks" class="hidden bg-white p-6 rounded-lg shadow-md mt-4">
             <h2 class="text-xl font-semibold mb-4">Tasks</h2>
-            <div id="task-list" class="space-y-4"></div>
+            <div class="task-board">
+                <div class="column">
+                    <h3 class="text-lg font-semibold mb-2">Pending</h3>
+                    <div id="pending-tasks"></div>
+                </div>
+                <div class="column">
+                    <h3 class="text-lg font-semibold mb-2">In Progress</h3>
+                    <div id="in_progress-tasks"></div>
+                </div>
+                <div class="column">
+                    <h3 class="text-lg font-semibold mb-2">Done</h3>
+                    <div id="done-tasks"></div>
+                </div>
+            </div>
 
             <!-- Create Task Form -->
             <h3 class="text-lg font-semibold mt-4">Create Task</h3>
             <input id="title" type="text" placeholder="Title" class="w-full p-2 mb-2 border rounded">
             <input id="description" type="text" placeholder="Description" class="w-full p-2 mb-2 border rounded">
-            <input id="priority" type="number" placeholder="Priority (1-5)" min="1" max="5" value="1" class="w-full p-2 mb-2 border rounded">
+            <input id="priority" type="number" placeholder="Priority (1-5)" min="1" max="5" class="w-full p-2 mb-2 border rounded">
             <select id="status" class="w-full p-2 mb-2 border rounded">
-                <option value="pending">Pending</option>
                 <option value="in_progress">In Progress</option>
                 <option value="done">Done</option>
             </select>
-            <input id="due_date" type="datetime-local" class="w-full p-2 mb-2 border rounded" value="2025-05-30T12:00">
             <button onclick="createTask()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Create Task</button>
             <p id="task-message" class="mt-2 text-center"></p>
         </div>
