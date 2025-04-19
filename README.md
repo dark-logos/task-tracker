@@ -1,6 +1,16 @@
 Task Tracker 
 Task Tracker is a RESTful API for task management, built with Go using the Gin framework. The project allows users to register, log in, manage tasks (create, view, update, delete), and provides Prometheus metrics support.
-Table of Contents
+
+logging + task creating
+![demo](docs/gifs/demo_task.gif)
+
+update tasks + upload the page
+![demo](docs/gifs/demo_update.gif)
+
+
+
+________________________________________
+Table of Contents:
 
 Requirements
 Installation
@@ -91,21 +101,6 @@ DELETE /tasks/:id — Delete a task.
 Response: 200 OK or 404 Not Found
 
 ______________________________________________
-
-Project Structure
-task-tracker/
-├── cmd/
-│   └── api/
-│       └── main.go         # Entry point
-├── internal/
-│   ├── auth/               # Authentication logic
-│   ├── config/             # Configuration loading
-│   ├── db/                 # Database connection
-│   ├── middleware/         # Middleware
-│   ├── tasks/              # Task logic
-├── .env                    # Environment variables
-├── go.mod                  # Dependencies
-└── README.md               # Documentation
 
 Contributing
 
