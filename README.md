@@ -1,7 +1,7 @@
 Task Tracker 
 Task Tracker is a RESTful API for task management, built with Go using the Gin framework. The project allows users to register, log in, manage tasks (create, view, update, delete), and provides Prometheus metrics support.
 
-logging + task creating
+logging + task creating (PLEASE, WAIT 2-3SEC FOR GIFS LOADING!)
 ![demo](docs/gifs/demo_task.gif)
 
 update tasks + upload the page
